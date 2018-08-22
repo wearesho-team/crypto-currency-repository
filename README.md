@@ -31,6 +31,18 @@ $repository = new Wearesho\CryptoCurrency\Repository(
 
 ```
 
+You can pass an array of wanted cryptocurrencies in repository using field `allowedCurrencies`.
+
+```php
+<?php
+
+$repository->allowedCurrencies = [
+    Wearesho\CryptoCurrency\Currency::bitcoin,
+    Wearesho\CryptoCurrency\Currency::bitcoinCash,
+];
+
+```
+
 Receive an information about actual cryptocurrencies
 
 ```php
