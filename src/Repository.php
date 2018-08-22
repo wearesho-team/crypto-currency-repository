@@ -170,6 +170,27 @@ class Repository extends base\BaseObject
         return $result;
     }
 
+    /**
+     * @param string|string[] $actions
+     * @throws \Psr\SimpleCache\InvalidArgumentException
+     */
+    public function invalidateCache($actions): void
+    {
+        foreach ((array)$actions as $action) {
+            if (!in_array($action, [
+                Action::CURRENCY,
+                Action::GLOBAL_DATA,
+                Action::TOP_DATA,
+            ])) {
+                throw new \InvalidArgumentException(
+                    'Invalid action passed to ' . static::class . "::invalidateCache : {$action}"
+                );
+            }
+
+            $this->cache->delete($this->buildCacheKey($action));
+        }
+    }
+
     protected function getChangesSorted(): array
     {
         $currencyList = $this->pullCurrency();
