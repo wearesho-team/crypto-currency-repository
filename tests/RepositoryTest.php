@@ -5,7 +5,9 @@ namespace Wearesho\CryptoCurrency\Tests;
 use Cache\Adapter\PHPArray\ArrayCachePool;
 use GuzzleHttp;
 use PHPUnit\Framework\TestCase;
+use Wearesho\CryptoCurrency\Action;
 use Wearesho\CryptoCurrency\Repository;
+use yii\queue\file\Queue;
 
 /**
  * Class RepositoryTest
@@ -19,6 +21,9 @@ class RepositoryTest extends TestCase
     /** @var GuzzleHttp\Client */
     protected $client;
 
+    /** @var Queue */
+    protected $queue;
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -28,6 +33,8 @@ class RepositoryTest extends TestCase
         $stack = new GuzzleHttp\HandlerStack($this->mock);
         $stack->push($history);
         $this->client = new GuzzleHttp\Client(['handler' => $stack,]);
+        $this->queue = new Queue();
+        $this->queue->clear();
     }
 
     public function testPullCurrency(): void
@@ -38,9 +45,13 @@ class RepositoryTest extends TestCase
         );
 
         $repository = new Repository(
-            new ArrayCachePool(),
+            $this->queue,
+            $cache = new ArrayCachePool(),
             $this->client
         );
+
+        $this->assertFalse($this->queue->isWaiting(1));
+
         $resp = $repository->pullCurrency();
 
         $this->assertObjectHasAttribute("name", $resp[1]);
@@ -54,6 +65,10 @@ class RepositoryTest extends TestCase
         $this->assertEquals('3.14', $resp[2]->percent_change->h24);
         $this->assertEquals('0.00005098', $resp[2]->price->btc);
         $this->assertEquals('XRP', $resp[2]->symbol);
+
+        $cachedValue = $cache->get('crypto-currencies-repository.currency');
+        $this->assertEquals($resp, $cachedValue);
+        $this->assertTrue($this->queue->isWaiting(1));
     }
 
     public function testPullGlobal(): void
@@ -63,13 +78,19 @@ class RepositoryTest extends TestCase
         );
 
         $repository = new Repository(
-            new ArrayCachePool(),
+            $this->queue,
+            $cache = new ArrayCachePool(),
             $this->client
         );
+        $this->assertFalse($this->queue->isWaiting(1));
         $resp = $repository->pullGlobal();
 
         $this->assertEquals(12023220573, $resp->totalVolume);
         $this->assertEquals(209106698893, $resp->totalMarketCap);
+
+        $cachedValue = $cache->get('crypto-currencies-repository.globalData');
+        $this->assertEquals($resp, $cachedValue);
+        $this->assertTrue($this->queue->isWaiting(1));
     }
 
     public function testPullTops(): void
@@ -80,9 +101,11 @@ class RepositoryTest extends TestCase
         );
 
         $repository = new Repository(
-            new ArrayCachePool(),
+            $this->queue,
+            $cache = new ArrayCachePool(),
             $this->client
         );
+        $this->assertFalse($this->queue->isWaiting(1));
         $resp = $repository->pullTops();
 
         $this->assertArrayHasKey("grow", $resp);
@@ -95,18 +118,30 @@ class RepositoryTest extends TestCase
         $this->assertEquals("KICK", $resp["fall"][0]->symbol);
         $this->assertEquals(1.0011140715, $resp["fall"][1]->price_usd);
         $this->assertEquals("Dogecoin", $resp["fall"][2]->name);
+
+        $cachedValue = $cache->get('crypto-currencies-repository.topData');
+        $this->assertEquals($resp, $cachedValue);
+        $this->assertTrue($this->queue->isWaiting(1));
     }
 
-    public function testRealRequest(): void
+    public function testInvalidateCache(): void
     {
-        $repository = new Repository(
-            $cache = new ArrayCachePool(),
-            new GuzzleHttp\Client
+        $this->mock->append(
+            new GuzzleHttp\Psr7\Response(200, [], file_get_contents(\Yii::getAlias('@tests/input/global.json')))
         );
-        $response = $repository->pullTops();
-        $this->assertArrayHasKey('grow', $response);
-        $this->assertArrayHasKey('fall', $response);
-        $cachedValue = $cache->get("crypto-currencies-repository.topData");
-        $this->assertEquals($response, $cachedValue);
+
+        $repository = new Repository(
+            $queue = new Queue(),
+            $cache = new ArrayCachePool(),
+            $this->client
+        );
+        $resp = $repository->pullGlobal();
+
+        $cachedValue = $cache->get('crypto-currencies-repository.globalData');
+        $this->assertEquals($resp, $cachedValue);
+
+        $repository->invalidateCache(Action::GLOBAL_DATA);
+        $cachedValue = $cache->get('crypto-currencies-repository.globalData');
+        $this->assertNull($cachedValue);
     }
 }

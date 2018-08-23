@@ -13,7 +13,7 @@ use yii\queue;
  */
 class UpdateData extends base\BaseObject implements queue\JobInterface
 {
-    /** @var array */
+    /** @var string|string[] */
     public $actions = [
         Action::CURRENCY,
         Action::GLOBAL_DATA,
@@ -28,7 +28,7 @@ class UpdateData extends base\BaseObject implements queue\JobInterface
         /** @var Repository $repository */
         $repository = \Yii::$container->get(Repository::class);
 
-        foreach ($this->actions as $action) {
+        foreach ((array)$this->actions as $action) {
             $repository->invalidateCache($action);
 
             switch ($action) {

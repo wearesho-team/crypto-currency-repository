@@ -5,6 +5,7 @@ namespace Wearesho\CryptoCurrency;
 use GuzzleHttp\ClientInterface;
 use Psr\SimpleCache\CacheInterface;
 use yii\base;
+use yii\queue\Queue;
 
 /**
  * Class Repository
@@ -13,6 +14,9 @@ use yii\base;
 class Repository extends base\BaseObject
 {
     protected const BASE_URI = 'https://api.coinmarketcap.com/v1/';
+
+    /** @var Queue */
+    protected $queue;
 
     /** @var CacheInterface */
     protected $cache;
@@ -37,11 +41,12 @@ class Repository extends base\BaseObject
         Currency::bitcoinCash,
     ];
 
-    public function __construct(CacheInterface $cache, ClientInterface $client, array $config = [])
+    public function __construct(Queue $queue, CacheInterface $cache, ClientInterface $client, array $config = [])
     {
         parent::__construct($config);
         $this->cache = $cache;
         $this->client = $client;
+        $this->queue = $queue;
     }
 
     public function pullCurrency(): array
@@ -106,7 +111,10 @@ class Repository extends base\BaseObject
             ]);
         }, $resultFilteredUah, $resultFilteredBtc);
 
-        $this->cache->set($cacheKey, $result, 60 * 60);
+        $this->cache->set($cacheKey, $result);
+        $this->queue
+            ->delay(60 * 60)
+            ->push(new Jobs\UpdateData(['actions' => Action::CURRENCY]));
 
         return $result;
     }
@@ -131,7 +139,10 @@ class Repository extends base\BaseObject
             'totalVolume' => $global['total_24h_volume_usd']
         ]);
 
-        $this->cache->set($cacheKey, $result, 60 * 60);
+        $this->cache->set($cacheKey, $result);
+        $this->queue
+            ->delay(60 * 60)
+            ->push(new Jobs\UpdateData(['actions' => Action::GLOBAL_DATA]));
 
         return $result;
     }
@@ -144,6 +155,8 @@ class Repository extends base\BaseObject
             return $cachedValue;
         }
 
+        $sortedChanges = $this->getChangesSorted();
+
         $result = [
             'grow' => array_map(function (Entities\Currency $item): Entities\TopData {
                 return new Entities\TopData([
@@ -153,7 +166,7 @@ class Repository extends base\BaseObject
                     'percent_change' => $item->percent_change->h24,
                     'change_usd' => $item->change_usd
                 ]);
-            }, array_slice(array_reverse($this->getChangesSorted()), 0, 3)),
+            }, array_slice(array_reverse($sortedChanges), 0, 3)),
             'fall' => array_map(function (Entities\Currency $item): Entities\TopData {
                 return new Entities\TopData([
                     'name' => $item->name,
@@ -162,10 +175,13 @@ class Repository extends base\BaseObject
                     'percent_change' => $item->percent_change->h24,
                     'change_usd' => $item->change_usd
                 ]);
-            }, array_slice($this->getChangesSorted(), 0, 3))
+            }, array_slice($sortedChanges, 0, 3))
         ];
 
-        $this->cache->set($cacheKey, $result, 60 * 60);
+        $this->cache->set($cacheKey, $result);
+        $this->queue
+            ->delay(60 * 60)
+            ->push(new Jobs\UpdateData(['actions' => Action::TOP_DATA]));
 
         return $result;
     }
