@@ -6,6 +6,7 @@ use Cache\Adapter\PHPArray\ArrayCachePool;
 use GuzzleHttp;
 use PHPUnit\Framework\TestCase;
 use Wearesho\CryptoCurrency\CacheRepository;
+use Wearesho\CryptoCurrency\Currency;
 use Wearesho\CryptoCurrency\Repository;
 use yii\queue\file\Queue;
 
@@ -42,6 +43,21 @@ class RepositoryTest extends TestCase
         $this->queue = new Queue();
         $this->queue->clear();
         $this->repository = new Repository($this->client);
+        $this->repository->allowedCurrencies = [
+            Currency::bitcoin,
+            Currency::litecoin,
+            Currency::tether,
+            Currency::monero,
+            Currency::ripple,
+            Currency::kickico,
+            Currency::zcash,
+            Currency::waves,
+            Currency::ethereumClassic,
+            Currency::ethereum,
+            Currency::dash,
+            Currency::dogecoin,
+            Currency::bitcoinCash,
+        ];
     }
 
     public function testPullCurrency(): void
