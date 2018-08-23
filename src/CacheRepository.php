@@ -9,7 +9,7 @@ use yii\queue\Queue;
  * Class ProxyRepository
  * @package Wearesho\CryptoCurrency
  */
-class CacheRepository
+class CacheRepository implements RepositoryInterface
 {
     /** @var Queue */
     protected $queue;
