@@ -17,21 +17,7 @@ class Repository extends base\BaseObject implements RepositoryInterface
     protected $client;
 
     /** @var string[] */
-    public $allowedCurrencies = [
-        Currency::bitcoin,
-        Currency::litecoin,
-        Currency::tether,
-        Currency::monero,
-        Currency::ripple,
-        Currency::kickico,
-        Currency::zcash,
-        Currency::waves,
-        Currency::ethereumClassic,
-        Currency::ethereum,
-        Currency::dash,
-        Currency::dogecoin,
-        Currency::bitcoinCash,
-    ];
+    public $allowedCurrencies = [];
 
     public function __construct(ClientInterface $client, array $config = [])
     {

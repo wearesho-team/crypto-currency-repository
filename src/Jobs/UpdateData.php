@@ -3,7 +3,7 @@
 namespace Wearesho\CryptoCurrency\Jobs;
 
 use Wearesho\CryptoCurrency\Action;
-use Wearesho\CryptoCurrency\Repository;
+use Wearesho\CryptoCurrency\RepositoryInterface;
 use yii\base;
 use yii\queue;
 
@@ -25,8 +25,8 @@ class UpdateData extends base\BaseObject implements queue\JobInterface
      */
     public function execute($queue): void
     {
-        /** @var Repository $repository */
-        $repository = \Yii::$container->get(Repository::class);
+        /** @var RepositoryInterface $repository */
+        $repository = \Yii::$container->get(RepositoryInterface::class);
 
         foreach ((array)$this->actions as $action) {
             switch ($action) {

@@ -5,7 +5,7 @@ namespace Wearesho\CryptoCurrency\Tests;
 use Cache\Adapter\PHPArray\ArrayCachePool;
 use GuzzleHttp;
 use PHPUnit\Framework\TestCase;
-use Wearesho\CryptoCurrency\ProxyRepository;
+use Wearesho\CryptoCurrency\CacheRepository;
 use Wearesho\CryptoCurrency\Repository;
 use yii\queue\file\Queue;
 
@@ -51,7 +51,7 @@ class RepositoryTest extends TestCase
             new GuzzleHttp\Psr7\Response(200, [], file_get_contents(\Yii::getAlias('@tests/input/btc_currency.json')))
         );
 
-        $repository = new ProxyRepository(
+        $repository = new CacheRepository(
             $this->queue,
             $cache = new ArrayCachePool(),
             $this->repository
@@ -84,7 +84,7 @@ class RepositoryTest extends TestCase
             new GuzzleHttp\Psr7\Response(200, [], file_get_contents(\Yii::getAlias('@tests/input/global.json')))
         );
 
-        $repository = new ProxyRepository(
+        $repository = new CacheRepository(
             $this->queue,
             $cache = new ArrayCachePool(),
             $this->repository
@@ -107,7 +107,7 @@ class RepositoryTest extends TestCase
             new GuzzleHttp\Psr7\Response(200, [], file_get_contents(\Yii::getAlias('@tests/input/btc_currency.json')))
         );
 
-        $repository = new ProxyRepository(
+        $repository = new CacheRepository(
             $this->queue,
             $cache = new ArrayCachePool(),
             $this->repository
