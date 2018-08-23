@@ -21,6 +21,9 @@ class RepositoryTest extends TestCase
     /** @var GuzzleHttp\Client */
     protected $client;
 
+    /** @var array */
+    protected $container;
+
     /** @var Queue */
     protected $queue;
 
@@ -28,8 +31,8 @@ class RepositoryTest extends TestCase
     {
         parent::setUp();
         $this->mock = new GuzzleHttp\Handler\MockHandler();
-        $container = [];
-        $history = GuzzleHttp\Middleware::history($container);
+        $this->container = [];
+        $history = GuzzleHttp\Middleware::history($this->container);
         $stack = new GuzzleHttp\HandlerStack($this->mock);
         $stack->push($history);
         $this->client = new GuzzleHttp\Client(['handler' => $stack,]);
@@ -118,30 +121,51 @@ class RepositoryTest extends TestCase
         $this->assertEquals("KICK", $resp["fall"][0]->symbol);
         $this->assertEquals(1.0011140715, $resp["fall"][1]->price_usd);
         $this->assertEquals("Dogecoin", $resp["fall"][2]->name);
-
-        $cachedValue = $cache->get('crypto-currencies-repository.topData');
-        $this->assertEquals($resp, $cachedValue);
-        $this->assertTrue($this->queue->isWaiting(1));
     }
 
-    public function testInvalidateCache(): void
+    public function testForceUpdateCurrencyData(): void
+    {
+        $this->mock->append(
+            new GuzzleHttp\Psr7\Response(200, [], file_get_contents(\Yii::getAlias('@tests/input/uah_currency.json'))),
+            new GuzzleHttp\Psr7\Response(200, [], file_get_contents(\Yii::getAlias('@tests/input/btc_currency.json')))
+        );
+
+        $repository = new Repository(
+            $this->queue,
+            $cache = new ArrayCachePool(),
+            $this->client
+        );
+
+        $repository->pullCurrency();
+        $this->assertEquals(2, count($this->container));
+
+        $this->mock->append(
+            new GuzzleHttp\Psr7\Response(200, [], file_get_contents(\Yii::getAlias('@tests/input/uah_currency.json'))),
+            new GuzzleHttp\Psr7\Response(200, [], file_get_contents(\Yii::getAlias('@tests/input/btc_currency.json')))
+        );
+        $repository->pullCurrency(true);
+        $this->assertEquals(4, count($this->container));
+    }
+
+    public function testForceUpdateGlobalData(): void
     {
         $this->mock->append(
             new GuzzleHttp\Psr7\Response(200, [], file_get_contents(\Yii::getAlias('@tests/input/global.json')))
         );
 
         $repository = new Repository(
-            $queue = new Queue(),
+            $this->queue,
             $cache = new ArrayCachePool(),
             $this->client
         );
-        $resp = $repository->pullGlobal();
 
-        $cachedValue = $cache->get('crypto-currencies-repository.globalData');
-        $this->assertEquals($resp, $cachedValue);
+        $repository->pullGlobal();
+        $this->assertEquals(1, count($this->container));
 
-        $repository->invalidateCache(Action::GLOBAL_DATA);
-        $cachedValue = $cache->get('crypto-currencies-repository.globalData');
-        $this->assertNull($cachedValue);
+        $this->mock->append(
+            new GuzzleHttp\Psr7\Response(200, [], file_get_contents(\Yii::getAlias('@tests/input/global.json')))
+        );
+        $repository->pullGlobal(true);
+        $this->assertEquals(2, count($this->container));
     }
 }

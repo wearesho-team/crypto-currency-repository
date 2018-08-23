@@ -29,17 +29,12 @@ class UpdateData extends base\BaseObject implements queue\JobInterface
         $repository = \Yii::$container->get(Repository::class);
 
         foreach ((array)$this->actions as $action) {
-            $repository->invalidateCache($action);
-
             switch ($action) {
-                case Action::TOP_DATA:
-                    $repository->pullTops();
-                    break;
                 case Action::CURRENCY:
-                    $repository->pullCurrency();
+                    $repository->pullCurrency(true);
                     break;
                 case Action::GLOBAL_DATA:
-                    $repository->pullGlobal();
+                    $repository->pullGlobal(true);
             }
         }
     }

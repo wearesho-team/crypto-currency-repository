@@ -49,11 +49,11 @@ class Repository extends base\BaseObject
         $this->queue = $queue;
     }
 
-    public function pullCurrency(): array
+    public function pullCurrency($forceUpdate = false): array
     {
         $cacheKey = $this->buildCacheKey(Action::CURRENCY);
         $cachedValue = $this->cache->get($cacheKey);
-        if (is_array($cachedValue)) {
+        if (is_array($cachedValue) && !$forceUpdate) {
             return $cachedValue;
         }
 
@@ -119,11 +119,11 @@ class Repository extends base\BaseObject
         return $result;
     }
 
-    public function pullGlobal(): Entities\GlobalData
+    public function pullGlobal($forceUpdate = false): Entities\GlobalData
     {
         $cacheKey = $this->buildCacheKey(Action::GLOBAL_DATA);
         $cachedValue = $this->cache->get($cacheKey);
-        if ($cachedValue) {
+        if ($cachedValue && !$forceUpdate) {
             return $cachedValue;
         }
 
@@ -149,12 +149,6 @@ class Repository extends base\BaseObject
 
     public function pullTops(): array
     {
-        $cacheKey = $this->buildCacheKey(Action::TOP_DATA);
-        $cachedValue = $this->cache->get($cacheKey);
-        if (is_array($cachedValue)) {
-            return $cachedValue;
-        }
-
         $sortedChanges = $this->getChangesSorted();
 
         $result = [
@@ -178,33 +172,7 @@ class Repository extends base\BaseObject
             }, array_slice($sortedChanges, 0, 3))
         ];
 
-        $this->cache->set($cacheKey, $result);
-        $this->queue
-            ->delay(60 * 60)
-            ->push(new Jobs\UpdateData(['actions' => Action::TOP_DATA]));
-
         return $result;
-    }
-
-    /**
-     * @param string|string[] $actions
-     * @throws \Psr\SimpleCache\InvalidArgumentException
-     */
-    public function invalidateCache($actions): void
-    {
-        foreach ((array)$actions as $action) {
-            if (!in_array($action, [
-                Action::CURRENCY,
-                Action::GLOBAL_DATA,
-                Action::TOP_DATA,
-            ])) {
-                throw new \InvalidArgumentException(
-                    'Invalid action passed to ' . static::class . "::invalidateCache : {$action}"
-                );
-            }
-
-            $this->cache->delete($this->buildCacheKey($action));
-        }
     }
 
     protected function getChangesSorted(): array
