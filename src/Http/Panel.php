@@ -35,7 +35,7 @@ class Panel extends Http\Panel
         return [
             'currencies' => $currencies,
             'global' => $this->repository->pullGlobal(),
-            'tops' => $this->repository->pullTops($currencies),
+            'tops' => $this->repository->generateTops($currencies),
         ];
     }
 }

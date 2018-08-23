@@ -95,7 +95,7 @@ class Repository extends base\BaseObject implements RepositoryInterface
         ]);
     }
 
-    public function pullTops(array $currenciesList): array
+    public function generateTops(array $currenciesList): array
     {
         $sortedChanges = $this->getChangesSorted($currenciesList);
 

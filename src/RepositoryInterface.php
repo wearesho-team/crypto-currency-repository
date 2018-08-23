@@ -10,5 +10,5 @@ interface RepositoryInterface
 {
     public function pullCurrency(): array;
     public function pullGlobal(): Entities\GlobalData;
-    public function pullTops(array $currenciesList): array;
+    public function generateTops(array $currenciesList): array;
 }
