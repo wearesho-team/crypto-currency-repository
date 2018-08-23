@@ -25,6 +25,7 @@ Create a repository
 <?php
 
 $repository = new Wearesho\CryptoCurrency\Repository(
+    new Queue(), // yii2 queue implementation
     new Cache(), // implementation of Psr\SimpleCache\CacheInterface
     new GuzzleHttp\Client()
 );
@@ -53,6 +54,8 @@ $globalData = $repository->pullGlobal();
 $topsData = $repository->pullTops();
 
 ```
+
+After receiving information all data will be saved into cache. The task for updating data will be created and triggered in 60 minutes. This allows you to receive data always from cache (instead of first hard loading) and to update it regularly and automatically.
 
 You can receive information about three categories: currencies, global and tops.
 * The "currencies" section contains a list of exchage rates and other information about crypto-currencies. 
