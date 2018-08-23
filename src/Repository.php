@@ -3,23 +3,15 @@
 namespace Wearesho\CryptoCurrency;
 
 use GuzzleHttp\ClientInterface;
-use Psr\SimpleCache\CacheInterface;
 use yii\base;
-use yii\queue\Queue;
 
 /**
  * Class Repository
  * @package Wearesho\CryptoCurrency
  */
-class Repository extends base\BaseObject
+class Repository extends base\BaseObject implements RepositoryInterface
 {
     protected const BASE_URI = 'https://api.coinmarketcap.com/v1/';
-
-    /** @var Queue */
-    protected $queue;
-
-    /** @var CacheInterface */
-    protected $cache;
 
     /** @var ClientInterface */
     protected $client;
@@ -41,36 +33,23 @@ class Repository extends base\BaseObject
         Currency::bitcoinCash,
     ];
 
-    public function __construct(Queue $queue, CacheInterface $cache, ClientInterface $client, array $config = [])
+    public function __construct(ClientInterface $client, array $config = [])
     {
         parent::__construct($config);
-        $this->cache = $cache;
         $this->client = $client;
-        $this->queue = $queue;
     }
 
-    public function pullCurrency($forceUpdate = false): array
+    public function pullCurrency(): array
     {
-        $cacheKey = $this->buildCacheKey(Action::CURRENCY);
-
-        if (!$forceUpdate) {
-            $cachedValue = $this->cache->get($cacheKey);
-            if (is_array($cachedValue)) {
-                return $cachedValue;
-            }
-        }
-
-        $client = $this->client;
-
         $resultUah = json_decode(
-            $client->request('GET', self::BASE_URI . 'ticker/?convert=uah&limit=0')
+            $this->client->request('GET', self::BASE_URI . 'ticker/?convert=uah&limit=0')
                 ->getBody()
                 ->getContents(),
             true
         );
 
         $resultBtc = json_decode(
-            $client->request('GET', self::BASE_URI . 'ticker/?convert=btc&limit=0')
+            $this->client->request('GET', self::BASE_URI . 'ticker/?convert=btc&limit=0')
                 ->getBody()
                 ->getContents(),
             true
@@ -84,7 +63,7 @@ class Repository extends base\BaseObject
             return in_array($item['id'], $this->allowedCurrencies);
         });
 
-        $result = array_map(function (array $item_uah, array $item_btc): Entities\Currency {
+        return array_map(function (array $item_uah, array $item_btc): Entities\Currency {
             return new Entities\Currency([
                 'id' => $item_uah['id'],
                 'name' => $item_uah['name'],
@@ -113,26 +92,10 @@ class Repository extends base\BaseObject
                 "change_usd" => ($item_uah['percent_change_24h'] * $item_uah['price_usd']) / 100
             ]);
         }, $resultFilteredUah, $resultFilteredBtc);
-
-        $this->cache->set($cacheKey, $result, 60 * 60 * 2);
-        $this->queue
-            ->delay(60 * 60)
-            ->push(new Jobs\UpdateData(['actions' => Action::CURRENCY]));
-
-        return $result;
     }
 
-    public function pullGlobal($forceUpdate = false): Entities\GlobalData
+    public function pullGlobal(): Entities\GlobalData
     {
-        $cacheKey = $this->buildCacheKey(Action::GLOBAL_DATA);
-
-        if (!$forceUpdate) {
-            $cachedValue = $this->cache->get($cacheKey);
-            if ($cachedValue) {
-                return $cachedValue;
-            }
-        }
-
         $global = json_decode(
             $this->client->request('GET', self::BASE_URI . 'global/')
                 ->getBody()
@@ -140,17 +103,10 @@ class Repository extends base\BaseObject
             true
         );
 
-        $result = new Entities\GlobalData([
+        return new Entities\GlobalData([
             'totalMarketCap' => $global['total_market_cap_usd'],
             'totalVolume' => $global['total_24h_volume_usd']
         ]);
-
-        $this->cache->set($cacheKey, $result, 60 * 60 * 2);
-        $this->queue
-            ->delay(60 * 60)
-            ->push(new Jobs\UpdateData(['actions' => Action::GLOBAL_DATA]));
-
-        return $result;
     }
 
     public function pullTops(): array
@@ -195,8 +151,4 @@ class Repository extends base\BaseObject
         return $currencyList;
     }
 
-    protected function buildCacheKey(string $action): string
-    {
-        return "crypto-currencies-repository.{$action}";
-    }
 }

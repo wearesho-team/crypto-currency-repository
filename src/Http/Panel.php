@@ -2,6 +2,7 @@
 
 namespace Wearesho\CryptoCurrency\Http;
 
+use Wearesho\CryptoCurrency\ProxyRepository;
 use Wearesho\CryptoCurrency\Repository;
 use Wearesho\Yii\Http;
 
@@ -17,7 +18,7 @@ class Panel extends Http\Panel
     public function __construct(
         Http\Request $request,
         Http\Response $response,
-        Repository $repository,
+        ProxyRepository $repository,
         array $config = []
     ) {
         parent::__construct($request, $response, $config);

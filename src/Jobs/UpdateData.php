@@ -31,10 +31,10 @@ class UpdateData extends base\BaseObject implements queue\JobInterface
         foreach ((array)$this->actions as $action) {
             switch ($action) {
                 case Action::CURRENCY:
-                    $repository->pullCurrency(true);
+                    $repository->pullCurrency();
                     break;
                 case Action::GLOBAL_DATA:
-                    $repository->pullGlobal(true);
+                    $repository->pullGlobal();
             }
         }
     }
