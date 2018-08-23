@@ -95,9 +95,9 @@ class Repository extends base\BaseObject implements RepositoryInterface
         ]);
     }
 
-    public function pullTops(): array
+    public function pullTops(array $currenciesList): array
     {
-        $sortedChanges = $this->getChangesSorted();
+        $sortedChanges = $this->getChangesSorted($currenciesList);
 
         $result = [
             'grow' => array_map(function (Entities\Currency $item): Entities\TopData {
@@ -123,10 +123,8 @@ class Repository extends base\BaseObject implements RepositoryInterface
         return $result;
     }
 
-    protected function getChangesSorted(): array
+    protected function getChangesSorted(array $currencyList): array
     {
-        $currencyList = $this->pullCurrency();
-
         usort($currencyList, function (Entities\Currency $item1, Entities\Currency $item2): int {
             if ($item1->change_usd > $item2->change_usd) {
                 return $item1->change_usd == $item2->change_usd ? 0 : 1;

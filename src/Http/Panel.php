@@ -30,10 +30,12 @@ class Panel extends Http\Panel
      */
     protected function generateResponse(): array
     {
+        $currencies = $this->repository->pullCurrency();
+
         return [
-            'currencies' => $this->repository->pullCurrency(),
+            'currencies' => $currencies,
             'global' => $this->repository->pullGlobal(),
-            'tops' => $this->repository->pullTops(),
+            'tops' => $this->repository->pullTops($currencies),
         ];
     }
 }

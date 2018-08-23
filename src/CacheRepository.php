@@ -69,9 +69,9 @@ class CacheRepository implements RepositoryInterface
         return $response;
     }
 
-    public function pullTops(): array
+    public function pullTops(array $currenciesList): array
     {
-        return $this->repository->pullTops();
+        return $this->repository->pullTops($currenciesList);
     }
 
     protected function buildCacheKey(string $action): string

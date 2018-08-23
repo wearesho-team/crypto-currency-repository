@@ -129,7 +129,8 @@ class RepositoryTest extends TestCase
             $this->repository
         );
         $this->assertFalse($this->queue->isWaiting(1));
-        $resp = $repository->pullTops();
+
+        $resp = $repository->pullTops($repository->pullCurrency());
 
         $this->assertArrayHasKey("grow", $resp);
         $this->assertObjectHasAttribute("price_usd", $resp["fall"][0]);
