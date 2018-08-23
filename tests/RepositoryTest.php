@@ -6,6 +6,7 @@ use Cache\Adapter\PHPArray\ArrayCachePool;
 use GuzzleHttp;
 use PHPUnit\Framework\TestCase;
 use Wearesho\CryptoCurrency\ProxyRepository;
+use Wearesho\CryptoCurrency\Repository;
 use yii\queue\file\Queue;
 
 /**
@@ -26,6 +27,9 @@ class RepositoryTest extends TestCase
     /** @var Queue */
     protected $queue;
 
+    /** @var Repository */
+    protected $repository;
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -37,6 +41,7 @@ class RepositoryTest extends TestCase
         $this->client = new GuzzleHttp\Client(['handler' => $stack,]);
         $this->queue = new Queue();
         $this->queue->clear();
+        $this->repository = new Repository($this->client);
     }
 
     public function testPullCurrency(): void
@@ -49,7 +54,7 @@ class RepositoryTest extends TestCase
         $repository = new ProxyRepository(
             $this->queue,
             $cache = new ArrayCachePool(),
-            $this->client
+            $this->repository
         );
 
         $this->assertFalse($this->queue->isWaiting(1));
@@ -82,7 +87,7 @@ class RepositoryTest extends TestCase
         $repository = new ProxyRepository(
             $this->queue,
             $cache = new ArrayCachePool(),
-            $this->client
+            $this->repository
         );
         $this->assertFalse($this->queue->isWaiting(1));
         $resp = $repository->pullGlobal();
@@ -105,7 +110,7 @@ class RepositoryTest extends TestCase
         $repository = new ProxyRepository(
             $this->queue,
             $cache = new ArrayCachePool(),
-            $this->client
+            $this->repository
         );
         $this->assertFalse($this->queue->isWaiting(1));
         $resp = $repository->pullTops();

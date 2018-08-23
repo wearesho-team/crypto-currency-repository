@@ -2,7 +2,6 @@
 
 namespace Wearesho\CryptoCurrency;
 
-use GuzzleHttp\ClientInterface;
 use Psr\SimpleCache\CacheInterface;
 use yii\queue\Queue;
 
@@ -10,7 +9,7 @@ use yii\queue\Queue;
  * Class ProxyRepository
  * @package Wearesho\CryptoCurrency
  */
-class ProxyRepository extends Repository
+class ProxyRepository
 {
     /** @var Queue */
     protected $queue;
@@ -18,15 +17,21 @@ class ProxyRepository extends Repository
     /** @var CacheInterface */
     protected $cache;
 
-    public function __construct(Queue $queue, CacheInterface $cache, ClientInterface $client, array $config = [])
-    {
-        parent::__construct($client, $config);
+    /** @var RepositoryInterface */
+    protected $repository;
+
+    public function __construct(
+        Queue $queue,
+        CacheInterface $cache,
+        RepositoryInterface $repository,
+        array $config = []
+    )  {
         $this->cache = $cache;
-        $this->client = $client;
         $this->queue = $queue;
+        $this->repository = $repository;
     }
 
-    public function pullCurrency($forceUpdate = false): array
+    public function pullCurrency(): array
     {
         $cacheKey = $this->buildCacheKey(Action::CURRENCY);
 
@@ -35,7 +40,7 @@ class ProxyRepository extends Repository
             return $cachedValue;
         }
 
-        $response = parent::pullCurrency($forceUpdate);
+        $response = $this->repository->pullCurrency();
 
         $this->cache->set($cacheKey, $response, 60 * 60 * 2);
         $this->queue
@@ -45,7 +50,7 @@ class ProxyRepository extends Repository
         return $response;
     }
 
-    public function pullGlobal($forceUpdate = false): Entities\GlobalData
+    public function pullGlobal(): Entities\GlobalData
     {
         $cacheKey = $this->buildCacheKey(Action::GLOBAL_DATA);
 
@@ -54,7 +59,7 @@ class ProxyRepository extends Repository
             return $cachedValue;
         }
 
-        $response = parent::pullGlobal($forceUpdate);
+        $response = $this->repository->pullGlobal();
 
         $this->cache->set($cacheKey, $response, 60 * 60 * 2);
         $this->queue
@@ -62,6 +67,11 @@ class ProxyRepository extends Repository
             ->push(new Jobs\UpdateData(['actions' => Action::GLOBAL_DATA]));
 
         return $response;
+    }
+
+    public function pullTops(): array
+    {
+        return $this->repository->pullTops();
     }
 
     protected function buildCacheKey(string $action): string
