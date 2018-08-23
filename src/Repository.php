@@ -52,9 +52,12 @@ class Repository extends base\BaseObject
     public function pullCurrency($forceUpdate = false): array
     {
         $cacheKey = $this->buildCacheKey(Action::CURRENCY);
-        $cachedValue = $this->cache->get($cacheKey);
-        if (is_array($cachedValue) && !$forceUpdate) {
-            return $cachedValue;
+
+        if (!$forceUpdate) {
+            $cachedValue = $this->cache->get($cacheKey);
+            if (is_array($cachedValue)) {
+                return $cachedValue;
+            }
         }
 
         $client = $this->client;
@@ -111,7 +114,7 @@ class Repository extends base\BaseObject
             ]);
         }, $resultFilteredUah, $resultFilteredBtc);
 
-        $this->cache->set($cacheKey, $result);
+        $this->cache->set($cacheKey, $result, 60 * 60 * 2);
         $this->queue
             ->delay(60 * 60)
             ->push(new Jobs\UpdateData(['actions' => Action::CURRENCY]));
@@ -122,9 +125,12 @@ class Repository extends base\BaseObject
     public function pullGlobal($forceUpdate = false): Entities\GlobalData
     {
         $cacheKey = $this->buildCacheKey(Action::GLOBAL_DATA);
-        $cachedValue = $this->cache->get($cacheKey);
-        if ($cachedValue && !$forceUpdate) {
-            return $cachedValue;
+
+        if (!$forceUpdate) {
+            $cachedValue = $this->cache->get($cacheKey);
+            if ($cachedValue) {
+                return $cachedValue;
+            }
         }
 
         $global = json_decode(
@@ -139,7 +145,7 @@ class Repository extends base\BaseObject
             'totalVolume' => $global['total_24h_volume_usd']
         ]);
 
-        $this->cache->set($cacheKey, $result);
+        $this->cache->set($cacheKey, $result, 60 * 60 * 2);
         $this->queue
             ->delay(60 * 60)
             ->push(new Jobs\UpdateData(['actions' => Action::GLOBAL_DATA]));
