@@ -2,7 +2,6 @@
 
 namespace Wearesho\CryptoCurrency\Http;
 
-use Wearesho\CryptoCurrency\CacheRepository;
 use Wearesho\CryptoCurrency\Repository;
 use Wearesho\Yii\Http;
 
@@ -18,7 +17,7 @@ class Panel extends Http\Panel
     public function __construct(
         Http\Request $request,
         Http\Response $response,
-        CacheRepository $repository,
+        Repository $repository,
         array $config = []
     ) {
         parent::__construct($request, $response, $config);
@@ -36,6 +35,7 @@ class Panel extends Http\Panel
             'currencies' => $currencies,
             'global' => $this->repository->pullGlobal(),
             'tops' => $this->repository->generateTops($currencies),
+            'updateTime' => $this->repository->getUpdateTime(),
         ];
     }
 }

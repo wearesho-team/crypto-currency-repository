@@ -3,30 +3,42 @@
 namespace Wearesho\CryptoCurrency;
 
 use GuzzleHttp\ClientInterface;
+use Psr\SimpleCache\CacheInterface;
 use yii\base;
 
 /**
  * Class Repository
  * @package Wearesho\CryptoCurrency
  */
-class Repository extends base\BaseObject implements RepositoryInterface
+class Repository extends base\BaseObject
 {
     protected const BASE_URI = 'https://api.coinmarketcap.com/v1/';
 
     /** @var ClientInterface */
     protected $client;
 
+    /** @var CacheInterface */
+    protected $cache;
+
     /** @var string[] */
     public $allowedCurrencies = [];
 
-    public function __construct(ClientInterface $client, array $config = [])
+    public function __construct(CacheInterface $cache, ClientInterface $client, array $config = [])
     {
         parent::__construct($config);
         $this->client = $client;
+        $this->cache = $cache;
     }
 
     public function pullCurrency(): array
     {
+        $cacheKey = $this->buildCacheKey(CacheKey::CURRENCY);
+
+        $cachedValue = $this->cache->get($cacheKey);
+        if (is_array($cachedValue)) {
+            return $cachedValue;
+        }
+
         $resultUah = json_decode(
             $this->client->request('GET', self::BASE_URI . 'ticker/?convert=uah&limit=0')
                 ->getBody()
@@ -49,7 +61,7 @@ class Repository extends base\BaseObject implements RepositoryInterface
             return in_array($item['id'], $this->allowedCurrencies);
         });
 
-        return array_map(function (array $item_uah, array $item_btc): Entities\Currency {
+        $result = array_map(function (array $item_uah, array $item_btc): Entities\Currency {
             return new Entities\Currency([
                 'id' => $item_uah['id'],
                 'name' => $item_uah['name'],
@@ -78,10 +90,25 @@ class Repository extends base\BaseObject implements RepositoryInterface
                 "change_usd" => ($item_uah['percent_change_24h'] * $item_uah['price_usd']) / 100
             ]);
         }, $resultFilteredUah, $resultFilteredBtc);
+
+        $this->cache->set($cacheKey, $result, 60 * 60);
+        $this->cache->set(
+            $this->buildCacheKey(CacheKey::UPDATE_TIME),
+            (new \DateTime())->format('Y-m-d H:i:s')
+        );
+
+        return $result;
     }
 
     public function pullGlobal(): Entities\GlobalData
     {
+        $cacheKey = $this->buildCacheKey(CacheKey::GLOBAL_DATA);
+
+        $cachedValue = $this->cache->get($cacheKey);
+        if ($cachedValue) {
+            return $cachedValue;
+        }
+
         $global = json_decode(
             $this->client->request('GET', self::BASE_URI . 'global/')
                 ->getBody()
@@ -89,10 +116,18 @@ class Repository extends base\BaseObject implements RepositoryInterface
             true
         );
 
-        return new Entities\GlobalData([
+        $result = new Entities\GlobalData([
             'totalMarketCap' => $global['total_market_cap_usd'],
             'totalVolume' => $global['total_24h_volume_usd']
         ]);
+
+        $this->cache->set($cacheKey, $result, 60 * 60);
+        $this->cache->set(
+            $this->buildCacheKey(CacheKey::UPDATE_TIME),
+            (new \DateTime())->format('Y-m-d H:i:s')
+        );
+
+        return $result;
     }
 
     public function generateTops(array $currenciesList): array
@@ -123,6 +158,12 @@ class Repository extends base\BaseObject implements RepositoryInterface
         return $result;
     }
 
+    public function getUpdateTime(): string
+    {
+        return $this->cache->get($this->buildCacheKey(CacheKey::UPDATE_TIME))
+            ?: (new \DateTime())->format('Y-m-d H:i:s');
+    }
+
     protected function getChangesSorted(array $currencyList): array
     {
         usort($currencyList, function (Entities\Currency $item1, Entities\Currency $item2): int {
@@ -135,4 +176,8 @@ class Repository extends base\BaseObject implements RepositoryInterface
         return $currencyList;
     }
 
+    protected function buildCacheKey(string $action): string
+    {
+        return "crypto-currencies-repository.{$action}";
+    }
 }
