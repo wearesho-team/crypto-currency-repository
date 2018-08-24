@@ -123,7 +123,7 @@ class RepositoryTest extends TestCase
     public function testUpdateTime(): void
     {
         $time = (new \DateTime())->format('Y-m-d H:i:s');
-        $this->assertGreaterThanOrEqual($time, $this->repository->getUpdateTime());
+        $this->assertNull($this->repository->getUpdateTime());
 
         $this->mock->append(
             new GuzzleHttp\Psr7\Response(200, [], file_get_contents(\Yii::getAlias('@tests/input/global.json')))
@@ -132,5 +132,6 @@ class RepositoryTest extends TestCase
         $this->repository->pullGlobal();
 
         $this->assertTrue($this->cache->has('crypto-currencies-repository.updateTime'));
+        $this->assertGreaterThanOrEqual($time, $this->repository->getUpdateTime());
     }
 }

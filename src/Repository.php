@@ -158,10 +158,9 @@ class Repository extends base\BaseObject
         return $result;
     }
 
-    public function getUpdateTime(): string
+    public function getUpdateTime(): ?string
     {
-        return $this->cache->get($this->buildCacheKey(CacheKey::UPDATE_TIME))
-            ?: (new \DateTime())->format('Y-m-d H:i:s');
+        return $this->cache->get($this->buildCacheKey(CacheKey::UPDATE_TIME));
     }
 
     protected function getChangesSorted(array $currencyList): array
