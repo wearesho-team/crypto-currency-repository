@@ -21,7 +21,21 @@ class Repository extends base\BaseObject
     protected $cache;
 
     /** @var string[] */
-    public $allowedCurrencies = [];
+    public $allowedCurrencies = [
+        Currency::bitcoin,
+        Currency::litecoin,
+        Currency::tether,
+        Currency::monero,
+        Currency::ripple,
+        Currency::kickico,
+        Currency::zcash,
+        Currency::waves,
+        Currency::ethereumClassic,
+        Currency::ethereum,
+        Currency::dash,
+        Currency::dogecoin,
+        Currency::bitcoinCash,
+    ];
 
     public function __construct(CacheInterface $cache, ClientInterface $client, array $config = [])
     {
