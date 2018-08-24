@@ -180,10 +180,14 @@ class Repository extends base\BaseObject
     protected function getChangesSorted(array $currencyList): array
     {
         usort($currencyList, function (Entities\Currency $item1, Entities\Currency $item2): int {
-            if ($item1->change_usd > $item2->change_usd) {
-                return $item1->change_usd == $item2->change_usd ? 0 : 1;
+            $value1 = number_format($item1->change_usd, 10);
+            $value2 = number_format($item2->change_usd, 10);
+
+            if ($value1 > $value2) {
+                return 1;
             }
-            return -1;
+
+            return $value1 === $value2 ? 0 : -1;
         });
 
         return $currencyList;
