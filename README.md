@@ -25,7 +25,6 @@ Create a repository
 <?php
 
 $repository = new Wearesho\CryptoCurrency\Repository(
-    new Queue(), // yii2 queue implementation
     new Cache(), // implementation of Psr\SimpleCache\CacheInterface
     new GuzzleHttp\Client()
 );

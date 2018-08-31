@@ -13,6 +13,7 @@ use yii\base;
 class Repository extends base\BaseObject
 {
     protected const BASE_URI = 'https://api.coinmarketcap.com/v1/';
+    protected const CACHE_TIME = 60 * 60; // 60 minutes
 
     /** @var ClientInterface */
     protected $client;
@@ -105,7 +106,7 @@ class Repository extends base\BaseObject
             ]);
         }, $resultFilteredUah, $resultFilteredBtc);
 
-        $this->cache->set($cacheKey, $result, 60 * 60);
+        $this->cache->set($cacheKey, $result, static::CACHE_TIME);
         $this->cache->set(
             $this->buildCacheKey(CacheKey::UPDATE_TIME),
             (new \DateTime())->format('Y-m-d H:i:s')
@@ -135,7 +136,7 @@ class Repository extends base\BaseObject
             'totalVolume' => $global['total_24h_volume_usd']
         ]);
 
-        $this->cache->set($cacheKey, $result, 60 * 60);
+        $this->cache->set($cacheKey, $result, static::CACHE_TIME);
         $this->cache->set(
             $this->buildCacheKey(CacheKey::UPDATE_TIME),
             (new \DateTime())->format('Y-m-d H:i:s')
