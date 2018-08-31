@@ -54,7 +54,7 @@ $topsData = $repository->pullTops();
 
 ```
 
-After receiving information all data will be saved into cache. The task for updating data will be created and triggered in 60 minutes. This allows you to receive data always from cache (instead of first hard loading) and to update it regularly and automatically.
+After receiving information all data will be saved into cache. 
 
 You can receive information about three categories: currencies, global and tops.
 * The "currencies" section contains a list of exchage rates and other information about crypto-currencies. 
